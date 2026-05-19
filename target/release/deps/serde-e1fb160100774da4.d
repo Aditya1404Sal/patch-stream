@@ -1,0 +1,14 @@
+/home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/deps/serde-e1fb160100774da4.d: /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/build/serde-757772a4bb4c0b15/out/private.rs
+
+/home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/deps/libserde-e1fb160100774da4.rlib: /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/build/serde-757772a4bb4c0b15/out/private.rs
+
+/home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/deps/libserde-e1fb160100774da4.rmeta: /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/build/serde-757772a4bb4c0b15/out/private.rs
+
+/home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/aditya-sal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/build/serde-757772a4bb4c0b15/out/private.rs:
+
+# env-dep:OUT_DIR=/home/aditya-sal/Desktop/wasmCloud/examples/patch-stream/target/release/build/serde-757772a4bb4c0b15/out
