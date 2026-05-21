@@ -8,7 +8,7 @@ A producer component emits JSON Patch records (RFC 6902, NDJSON-
 encoded) into a `stream<u8>`. Two front-end components consume that
 stream:
 
-- **patch-consumer** exports `wasi:http/handler@0.3` and pipes the
+- **commander** exports `wasi:http/handler@0.3` and pipes the
   stream straight through as the body of a `GET /` HTTP response
   (chunked, no copying).
 - **meta-json** exports `wasmcloud:websocket/handler@0.1` and emits
@@ -20,7 +20,7 @@ serves (see `.wash/config.yaml`).
 
 ```
 ┌────────┐  GET /            ┌──────────────────────────┐  patches.subscribe()    ┌──────────────────┐
-│ curl   │ ────────────────▶ │ patch-consumer           │ ──────────────────────▶ │ patch-producer   │
+│ curl   │ ────────────────▶ │ commander                │ ──────────────────────▶ │ pages-agent      │
 │  -N    │ ◀── chunked ───── │ (wasi:http/handler@0.3)  │ ◀── stream<u8> NDJSON ──│                  │
 └────────┘  one HTTP chunk   │                          │                         │ spawns async     │
             per patch line   │ pipes stream straight    │                         │ writer task that │
@@ -90,7 +90,7 @@ a `Frame::Text(...)` on the outbound stream.
 
 ```
 ┌────────┐  GET / Upgrade:    ┌─────────────────────────────┐  patches.subscribe()    ┌──────────────────┐
-│ wscat  │  websocket ──────▶ │ meta-json                   │ ──────────────────────▶ │ patch-producer   │
+│ wscat  │  websocket ──────▶ │ meta-json                   │ ──────────────────────▶ │ pages-agent      │
 │        │ ◀── WS text ────── │ (wasmcloud:websocket/handler│ ◀── stream<u8> NDJSON ──│                  │
 └────────┘  frames, one per   │  @0.1.0)                    │                         │ (same as above)  │
             patch line, paced │                             │                         │                  │
@@ -102,7 +102,7 @@ a `Frame::Text(...)` on the outbound stream.
 ```
 
 Switch `build.component_path` in `.wash/config.yaml` between
-`patch_consumer.wasm` and `meta_json.wasm` to flip between the HTTP
+`commander.wasm` and `meta_json.wasm` to flip between the HTTP
 and WebSocket front-ends. Both worlds keep producer as a peer.
 
 ### Try it
@@ -157,7 +157,7 @@ WS close).
 - **Single component, but linked to a peer for data.** meta-json
   itself only imports `patches`; the WS handler call goes through
   `pre_instantiate_linked_components_for_component` first so the
-  patch-producer instance is available for meta-json's
+  pages-agent instance is available for meta-json's
   `patches::subscribe().await` to invoke.
 
 ### WS-handling code lives in
@@ -352,16 +352,16 @@ in `crates/wash-runtime/`:
 
 ```
 examples/patch-stream/
-├── Cargo.toml                # workspace: [patch-producer, patch-consumer, meta-json]
-├── .wash/config.yaml         # wash dev: wasip3 on, patch-producer as peer component;
-│                             # build.component_path selects the front-end (consumer | meta-json)
+├── Cargo.toml                # workspace: [pages-agent, commander, meta-json]
+├── .wash/config.yaml         # wash dev: wasip3 on, pages-agent as peer component;
+│                             # build.component_path selects the front-end (commander | meta-json)
 ├── wit/
 │   ├── world.wit             # patches + sink + three worlds (producer, consumer, meta-json)
 │   └── deps/                 # wasi:http@0.3 + clocks@0.3 + wasmcloud:websocket@0.1 + ...
-├── patch-producer/           # exports patches.subscribe; imports wasi:clocks/monotonic-clock@0.3
+├── pages-agent/              # exports patches.subscribe; imports wasi:clocks/monotonic-clock@0.3
 │                             # writes 20 timestamped NDJSON patches with 500 ms wait-for between
-├── patch-consumer/           # exports wasi:http/handler@0.3, imports patches + sink
-│                             # handle() = subscribe + hand off via sink::send-stream
+├── commander/                # exports wasi:http/handler@0.3, imports patches + sink
+│                             # handle() = subscribe + hand off via sink::accept-stream
 └── meta-json/                # exports wasmcloud:patch-stream/sink AND
                               # wasmcloud:websocket/handler@0.1; imports patches.
                               # WS path: subscribe + emit each line as Frame::Text.
@@ -369,7 +369,7 @@ examples/patch-stream/
 ```
 
 `.wash/config.yaml` sets `dev.wasip3: true` and lists
-`patch-producer` under `dev.components` so wash dev loads it as a
+`pages-agent` under `dev.components` so wash dev loads it as a
 peer of the entry consumer (the build target).
 
 ## Open follow-ups

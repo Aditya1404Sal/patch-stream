@@ -1,6 +1,6 @@
 mod bindings {
     wit_bindgen::generate!({
-        world: "patch-producer",
+        world: "pages-agent",
         path: "../wit",
         generate_all,
         async: [
@@ -18,7 +18,7 @@ struct Component;
 
 /// 500ms between patches — slow enough for `curl -N` to visibly render each
 /// line on its own flush while debugging host-side buffering.
-const TICK_NS: u64 = 500_000_000;
+const TICK_NS: u64 = 500_000;
 
 /// One edit session against a tiny task-list document. Each entry is a
 /// complete RFC 6902 JSON Patch operation, NDJSON-framed by the writer.
@@ -41,8 +41,9 @@ const EDITS: &[&[u8]] = &[
     br#"{"op":"remove","path":"/items/0"}"#,
     br#"{"op":"replace","path":"/version","value":"3"}"#,
     br#"{"op":"replace","path":"/items/0/name","value":"\"prototype (renamed)\""}"#,
-    br#"{"op":"add","path":"/meta","value":"{\"emitted_by\":\"patch-producer\"}"}"#,
+    br#"{"op":"add","path":"/meta","value":"{\"emitted_by\":\"pages-agent\"}"}"#,
     br#"{"op":"replace","path":"/version","value":"4"}"#,
+    br#"{"op":"replace","path":"/options/first_name","value":"Emiel"}"#,
 ];
 
 impl Guest for Component {

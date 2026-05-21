@@ -4,7 +4,7 @@ mod bindings {
         path: "../wit",
         generate_all,
         async: [
-            "export:wasmcloud:patch-stream/sink@0.1.0#send-stream",
+            "export:wasmcloud:patch-stream/sink@0.1.0#accept-stream",
             "export:wasmcloud:websocket/handler@0.1.0#handle",
             "import:wasmcloud:patch-stream/patches@0.1.0#subscribe",
         ],
@@ -22,7 +22,7 @@ struct Component;
 // ---- Existing sink path (HTTP-NDJSON demo, kept for parity) ----
 
 impl SinkGuest for Component {
-    async fn send_stream(mut s: StreamReader<u8>) -> Result<(), ()> {
+    async fn accept_stream(mut s: StreamReader<u8>) -> Result<(), ()> {
         eprintln!("meta-json: stream received, draining…");
         let mut line: Vec<u8> = Vec::with_capacity(256);
         let mut bytes: u64 = 0;

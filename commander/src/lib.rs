@@ -1,11 +1,11 @@
 mod bindings {
     wit_bindgen::generate!({
-        world: "patch-consumer",
+        world: "commander",
         path: "../wit",
         generate_all,
         async: [
             "import:wasmcloud:patch-stream/patches@0.1.0#subscribe",
-            "import:wasmcloud:patch-stream/sink@0.1.0#send-stream",
+            "import:wasmcloud:patch-stream/sink@0.1.0#accept-stream",
             "export:wasi:http/handler@0.3.0-rc-2026-03-15#handle",
         ],
     });
@@ -30,7 +30,7 @@ impl Handler for Component {
         // commander's job is to dispatch, meta-json is responsible
         // for persisting / logging the result.
         let patches_rx = patches::subscribe().await;
-        let result = sink::send_stream(patches_rx).await;
+        let result = sink::accept_stream(patches_rx).await;
 
         let (_trailers_tx, trailers_rx) = bindings::wit_future::new(|| Ok(None));
         let (response, _result) = Response::new(headers, None, trailers_rx);

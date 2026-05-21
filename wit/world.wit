@@ -38,16 +38,16 @@ interface patches {
 /// NDJSON patch line to stderr; the consumer (commander) hands the
 /// patches stream off and forgets about it.
 interface sink {
-    send-stream: async func(s: stream<u8>) -> result;
+    accept-stream: async func(s: stream<u8>) -> result;
 }
 
-world patch-producer {
+world pages-agent {
     import wasi:clocks/monotonic-clock@0.3.0-rc-2026-03-15;
 
     export patches;
 }
 
-world patch-consumer {
+world commander {
     import patches;
     import sink;
 

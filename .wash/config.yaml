@@ -7,8 +7,8 @@ build:
 dev:
   wasip3: true
   components:
-    - name: patch-producer
-      file: target/wasm32-wasip2/release/patch_producer.wasm
+    - name: pages-agent
+      file: target/wasm32-wasip2/release/pages_agent.wasm
 
 new:
   command: cargo fetch
