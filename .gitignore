@@ -1,0 +1,10 @@
+# Rust / Cargo build artifacts
+target/
+**/target/
+
+# Build output
+build/
+dist/
+out/
+
+wash
