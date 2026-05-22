@@ -84,6 +84,12 @@ impl GuestPageStream for StreamControl {
         self.state.cancelled.store(true, Relaxed);
         self.state.status.store(STATUS_CANCELLED, Relaxed);
     }
+
+    fn fork(&self) -> PageStream {
+        PageStream::new(StreamControl {
+            state: self.state.clone(),
+        })
+    }
 }
 
 impl Guest for Component {

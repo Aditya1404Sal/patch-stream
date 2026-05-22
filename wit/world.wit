@@ -29,6 +29,7 @@ interface page-generation {
     resource page-stream {
         status: func() -> string;
         cancel-streaming: func();
+        fork: func() -> page-stream;
     }
 
     /// Generate a page-edit stream for the supplied prompt. Returns
@@ -45,7 +46,9 @@ interface page-generation {
 /// NDJSON patch line to stderr; the commander hands the
 /// PageAgent stream off and forgets about it.
 interface sink {
-    send-stream: async func(s: stream<u8>) -> result;
+    use page-generation.{page-stream};
+
+    send-stream: async func(s: stream<u8>, control: page-stream) -> result;
 }
 
 interface broker {

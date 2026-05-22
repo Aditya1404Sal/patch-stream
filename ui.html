@@ -160,7 +160,8 @@ sequenceDiagram
   <div class="input-row">
     <input type="text" id="prompt" placeholder="Describe a landing page…" value="Landing page for an AI streaming platform" />
     <button id="send">Send</button>
-    <button id="cancel" class="secondary" type="button">Cancel</button>
+    <button id="cancel-ws" class="secondary" type="button">Cancel via WS</button>
+    <button id="cancel-http" class="secondary" type="button">Cancel via Commander</button>
   </div>
   <div class="presets">
     <span>Try:</span>
@@ -446,22 +447,32 @@ sequenceDiagram
     }
   }
 
-  async function cancelStream() {
+  async function cancelViaWebSocket() {
     try {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send("cancel");
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("WebSocket is not open yet, so MetaJson cannot receive a WS cancel.");
         return;
       }
+      ws.send("cancel");
+    } catch (err) {
+      console.error("websocket cancel failed:", err);
+      alert("WebSocket cancel failed: " + err.message);
+    }
+  }
+
+  async function cancelViaCommander() {
+    try {
       const res = await fetch(CANCEL_URL);
       if (!res.ok) console.warn(`cancel returned HTTP ${res.status}`);
     } catch (err) {
-      console.error("cancel failed:", err);
-      alert("Cancel failed: " + err.message + "\nIs `wash dev` running?");
+      console.error("commander cancel failed:", err);
+      alert("Commander cancel failed: " + err.message + "\nIs `wash dev` running?");
     }
   }
 
   document.getElementById("send").addEventListener("click", send);
-  document.getElementById("cancel").addEventListener("click", cancelStream);
+  document.getElementById("cancel-ws").addEventListener("click", cancelViaWebSocket);
+  document.getElementById("cancel-http").addEventListener("click", cancelViaCommander);
   document.getElementById("prompt").addEventListener("keydown", (e) => {
     if (e.key === "Enter") send();
   });

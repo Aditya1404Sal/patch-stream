@@ -52,10 +52,11 @@ async fn serve_trigger(prompt: String) -> Result<Response, ErrorCode> {
     );
 
     // Kick off PageAgent and hand the resulting byte stream to meta-json in a
-    // background task. Commander keeps the PageAgent control resource so it can
-    // cancel the producer if a separate HTTP or websocket request increments
-    // the broker cancellation generation.
+    // background task. Commander keeps the original PageAgent control resource
+    // and passes a forked control resource to meta-json, so either side can
+    // cancel the same underlying PageAgent job state.
     let (page_rx, control) = page_generation::generate_page(prompt).await;
+    let metajson_control = control.fork();
     let start_cancel_generation = broker::cancel_generation();
     let (mut body_tx, body_rx) = bindings::wit_stream::new::<u8>();
     let (_trailers_tx, trailers_rx) = bindings::wit_future::new(|| Ok(None));
@@ -63,7 +64,7 @@ async fn serve_trigger(prompt: String) -> Result<Response, ErrorCode> {
     wit_bindgen::spawn(async move {
         body_tx.write_all(b"accepted\n".to_vec()).await;
 
-        let send = sink::send_stream(page_rx);
+        let send = sink::send_stream(page_rx, metajson_control);
         let cancel = broker::wait_cancel_after(start_cancel_generation);
         futures::pin_mut!(send);
         futures::pin_mut!(cancel);
