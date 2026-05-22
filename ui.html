@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>patch-stream · live demo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #181b24;
+    --panel-2: #1f2330;
+    --border: #2a2f3e;
+    --text: #e7e9ee;
+    --muted: #9aa0b4;
+    --accent: #5eead4;
+    --accent-2: #a78bfa;
+    --add: #4ade80;
+    --replace: #fbbf24;
+    --remove: #f87171;
+    --status-on: #4ade80;
+    --status-off: #f87171;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; height: 100%; }
+  body { display: flex; flex-direction: column; height: 100vh; }
+
+  header { padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; gap: 8px; }
+  header .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  header h1 span { color: var(--accent); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-off); transition: background .2s; }
+  .status.connected .dot { background: var(--status-on); box-shadow: 0 0 6px var(--status-on); }
+  .status .count { color: var(--text); }
+
+  details.diagram { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+  details.diagram summary { cursor: pointer; font-size: 13px; color: var(--muted); user-select: none; }
+  details.diagram summary:hover { color: var(--text); }
+  details.diagram[open] summary { color: var(--text); margin-bottom: 12px; }
+  details.diagram .mermaid { background: #fff; padding: 16px; border-radius: 4px; overflow-x: auto; }
+
+  .controls { padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; gap: 8px; }
+  .controls .input-row { display: flex; gap: 8px; }
+  .controls input[type=text] {
+    flex: 1; padding: 9px 12px; background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  .controls input[type=text]:focus { outline: none; border-color: var(--accent); }
+  .controls button {
+    padding: 9px 18px; background: var(--accent); color: #0b0d12; border: none; border-radius: 6px;
+    font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .controls button:hover { filter: brightness(1.1); }
+  .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .controls button.secondary {
+    background: transparent; color: var(--remove); border: 1px solid var(--remove);
+  }
+  .controls button.secondary:hover { background: rgba(248,113,113,0.12); filter: none; }
+  .controls .presets { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; align-items: center; }
+  .controls .presets span { color: var(--muted); margin-right: 4px; }
+  .controls .presets button {
+    padding: 4px 10px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 12px; font-weight: 400; cursor: pointer; font-family: inherit;
+  }
+  .controls .presets button:hover { color: var(--text); border-color: var(--accent-2); }
+
+  main { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 1px; background: var(--border); overflow: hidden; min-height: 0; }
+  .pane { background: var(--panel); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .pane h2 { margin: 0; padding: 10px 14px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--panel-2); }
+  .pane .body { flex: 1; overflow: auto; padding: 12px 14px; font-family: var(--mono); font-size: 12px; line-height: 1.5; }
+  .pane .empty { color: var(--muted); font-style: italic; font-family: inherit; font-size: 13px; padding: 12px 14px; }
+
+  .patch-entry { padding: 6px 8px; margin-bottom: 4px; border-left: 3px solid var(--border); border-radius: 0 4px 4px 0; background: rgba(255,255,255,0.02); }
+  .patch-entry.add { border-left-color: var(--add); }
+  .patch-entry.replace { border-left-color: var(--replace); }
+  .patch-entry.remove { border-left-color: var(--remove); }
+  .patch-entry .meta { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .patch-entry .meta .op { font-weight: 600; }
+  .patch-entry .meta .op.add { color: var(--add); }
+  .patch-entry .meta .op.replace { color: var(--replace); }
+  .patch-entry .meta .op.remove { color: var(--remove); }
+  .patch-entry .path { color: var(--accent); }
+  .patch-entry .value { color: var(--text); word-break: break-word; white-space: pre-wrap; }
+
+  .json-state { white-space: pre; }
+  .json-state .k { color: var(--accent-2); }
+  .json-state .s { color: var(--add); }
+  .json-state .n { color: var(--replace); }
+
+  /* Rendered preview pane uses sans-serif and proper page styling */
+  .preview-body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.55; }
+  .preview-body h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .preview-body .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 15px; }
+  .preview-body .hero { background: linear-gradient(135deg, rgba(94,234,212,0.08), rgba(167,139,250,0.08)); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; }
+  .preview-body .hero h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .preview-body .hero p { margin: 0 0 14px; color: var(--text); }
+  .preview-body .hero .cta { display: inline-block; padding: 8px 16px; background: var(--accent); color: #0b0d12; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 13px; }
+  .preview-body section { margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+  .preview-body section:last-of-type { border-bottom: none; }
+  .preview-body section h3 { margin: 0 0 6px; font-size: 16px; color: var(--accent); }
+  .preview-body section p { margin: 0 0 10px; color: var(--text); }
+  .preview-body section ul { margin: 0; padding-left: 20px; }
+  .preview-body section ul li { margin-bottom: 4px; }
+  .preview-body footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="row">
+    <h1>patch-stream <span>·</span> live demo</h1>
+    <div class="status" id="status">
+      <span class="dot"></span>
+      <span id="status-text">connecting to ws://localhost:8000/…</span>
+      <span class="count" id="patch-count"></span>
+    </div>
+  </div>
+  <details class="diagram">
+    <summary>▸ How it works — sequence diagram</summary>
+    <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Client as "Browser (ui.html)"
+    participant Meta as meta-json
+    participant Broker as "broker (host plugin)"
+    participant Cmd as commander
+    participant Agent as page-agent
+    participant AI as "OpenAI / fallback"
+
+    Note over Client,Meta: Phase 1 - subscribe (on page load)
+    Client->>+Meta: WS upgrade GET /
+    Meta->>+Broker: register() returns client_id
+    Meta-->>Client: 101 Switching Protocols
+    loop wait for messages
+        Meta->>Broker: wait_message(client_id)
+    end
+
+    Note over Client,AI: Phase 2 - trigger (on Send click)
+    Client->>+Cmd: HTTP GET /?prompt=...
+    Cmd->>+Agent: page-generation.generate-page(prompt) returns byte stream
+    Agent->>+AI: POST /v1/chat/completions (stream:true)
+    AI-->>Agent: SSE chunks
+    Agent-->>Cmd: NDJSON byte stream (paced)
+    Cmd->>+Meta: sink.send-stream(byte stream)
+    Meta-->>-Cmd: drained, ok
+    Cmd-->>-Client: 200 OK (empty body)
+
+    Note over Meta,Client: Phase 3 - fan-out (concurrent with Phase 2)
+    loop per line received
+        Meta->>Broker: publish-message(line)
+        Broker-->>Meta: (wakes wait_message)
+        Meta-->>Client: WS Frame::Text (one patch line)
+    end
+    </div>
+  </details>
+</header>
+
+<div class="controls">
+  <div class="input-row">
+    <input type="text" id="prompt" placeholder="Describe a landing page…" value="Landing page for an AI streaming platform" />
+    <button id="send">Send</button>
+    <button id="cancel" class="secondary" type="button">Cancel</button>
+  </div>
+  <div class="presets">
+    <span>Try:</span>
+    <button data-prompt="Landing page for an AI streaming platform">Streaming AI</button>
+    <button data-prompt="Pricing page for a SaaS analytics tool with three tiers">Pricing page</button>
+    <button data-prompt="Feature launch page for a collaborative whiteboard app">Feature launch</button>
+  </div>
+</div>
+
+<main>
+  <section class="pane">
+    <h2>Patch stream <span style="text-transform:none;font-weight:400;color:var(--muted)">(newest at top)</span></h2>
+    <div class="body" id="patch-log">
+      <div class="empty">Waiting for the first patch. Click <b>Send</b> to trigger commander.</div>
+    </div>
+  </section>
+  <section class="pane">
+    <h2>Document state</h2>
+    <div class="body json-state" id="doc-state">
+      <div class="empty">Waiting for the first patch…</div>
+    </div>
+  </section>
+  <section class="pane">
+    <h2>Rendered preview</h2>
+    <div class="body preview-body" id="preview">
+      <div class="empty">Waiting for the first patch…</div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  // Initialize Mermaid with a light theme that contrasts with our dark UI.
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+
+  // ---------------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------------
+  let doc = {};            // The materializing landing-page document.
+  let patchCount = 0;      // Total patches received since last reset.
+  let ws = null;           // Active WebSocket, or null if disconnected.
+  let reconnectDelay = 500;
+  const MAX_RECONNECT = 5000;
+
+  // Origin-aware URLs so the same file works both ways:
+  //   • Opened via file:// → fall back to localhost:8000 (the default
+  //     `wash dev` HTTP listener).
+  //   • Served by commander at http://localhost:8000/ → use that origin
+  //     directly. Means the demo is fully self-contained behind one URL.
+  const SERVED_BY_COMMANDER = location.protocol === "http:" || location.protocol === "https:";
+  const HTTP_ORIGIN = SERVED_BY_COMMANDER ? location.origin : "http://localhost:8000";
+  const WS_ORIGIN = SERVED_BY_COMMANDER
+    ? (location.protocol === "https:" ? "wss://" : "ws://") + location.host
+    : "ws://localhost:8000";
+  const WS_URL = WS_ORIGIN + "/";
+  const TRIGGER_URL = HTTP_ORIGIN + "/";
+  const CANCEL_URL = HTTP_ORIGIN + "/cancel";
+
+  // ---------------------------------------------------------------------------
+  // RFC 6902 patch applier (subset: add / replace / remove only — page-agent
+  // never emits move/copy/test). Path uses JSON Pointer; numeric segments
+  // become array indices when the parent is an array.
+  // ---------------------------------------------------------------------------
+  function applyPatch(doc, op, path, value) {
+    if (path === "" || path === "/") {
+      return op === "remove" ? {} : value;
+    }
+    const segs = path.split("/").slice(1).map(decodePointerToken);
+    let parent = doc;
+    for (let i = 0; i < segs.length - 1; i++) {
+      const seg = segs[i];
+      const nextIsArrayIdx = /^\d+$/.test(segs[i + 1]);
+      if (parent[seg] === undefined) {
+        // Auto-create parents — handy when the AI adds /sections/0/items/0
+        // without first creating /sections or /sections/0/items as containers.
+        parent[seg] = nextIsArrayIdx ? [] : {};
+      }
+      parent = parent[seg];
+    }
+    const last = segs[segs.length - 1];
+    if (op === "remove") {
+      if (Array.isArray(parent)) parent.splice(Number(last), 1);
+      else delete parent[last];
+    } else {
+      if (Array.isArray(parent)) {
+        const idx = Number(last);
+        parent[idx] = value;
+      } else {
+        parent[last] = value;
+      }
+    }
+    return doc;
+  }
+  function decodePointerToken(t) {
+    // RFC 6901 escapes: ~1 → /, ~0 → ~
+    return t.replace(/~1/g, "/").replace(/~0/g, "~");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Patch line parsing. Each WS text frame looks like:
+  //   [t+ 500ms] {"op":"add","path":"/title","value":"\"Streamline\""}
+  // The `value` field is itself a JSON-encoded value (double-encoded).
+  // ---------------------------------------------------------------------------
+  function parsePatchLine(line) {
+    const m = /^\[t\+\s*(\d+)ms\]\s*(.*)$/.exec(line);
+    const timestamp = m ? Number(m[1]) : null;
+    const jsonPart = m ? m[2] : line;
+    let raw;
+    try { raw = JSON.parse(jsonPart); } catch { return null; }
+    if (!raw || typeof raw.op !== "string" || typeof raw.path !== "string") return null;
+    let value;
+    try {
+      value = raw.value !== undefined ? JSON.parse(raw.value) : undefined;
+    } catch {
+      value = raw.value; // fallback — show as-is if value isn't valid JSON
+    }
+    return { timestamp, op: raw.op, path: raw.path, value };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render the three panes. Called after every applied patch.
+  // ---------------------------------------------------------------------------
+  function renderPatchLog(entry) {
+    const log = document.getElementById("patch-log");
+    if (log.querySelector(".empty")) log.innerHTML = "";
+    const div = document.createElement("div");
+    div.className = "patch-entry " + entry.op;
+    const ts = entry.timestamp !== null ? `t+${entry.timestamp}ms` : "—";
+    const valueStr = entry.value === undefined ? "" : JSON.stringify(entry.value);
+    div.innerHTML = `
+      <div class="meta">
+        <span class="op ${entry.op}">${entry.op.toUpperCase()}</span> · ${ts}
+      </div>
+      <div><span class="path">${escapeHtml(entry.path)}</span></div>
+      ${valueStr ? `<div class="value">${escapeHtml(valueStr)}</div>` : ""}
+    `;
+    log.insertBefore(div, log.firstChild);
+    // Cap log to 200 entries so the demo doesn't slow down on long streams.
+    while (log.children.length > 200) log.removeChild(log.lastChild);
+  }
+
+  function renderDocState() {
+    const el = document.getElementById("doc-state");
+    if (Object.keys(doc).length === 0) {
+      el.innerHTML = `<div class="empty">Waiting for the first patch…</div>`;
+      return;
+    }
+    el.textContent = JSON.stringify(doc, null, 2);
+  }
+
+  function renderPreview() {
+    const el = document.getElementById("preview");
+    if (Object.keys(doc).length === 0) {
+      el.innerHTML = `<div class="empty">Waiting for the first patch…</div>`;
+      return;
+    }
+    let html = "";
+    if (doc.title) html += `<h1>${escapeHtml(String(doc.title))}</h1>`;
+    if (doc.subtitle) html += `<p class="subtitle">${escapeHtml(String(doc.subtitle))}</p>`;
+    if (doc.hero && (doc.hero.headline || doc.hero.description || doc.hero.cta)) {
+      html += `<div class="hero">`;
+      if (doc.hero.headline) html += `<h2>${escapeHtml(String(doc.hero.headline))}</h2>`;
+      if (doc.hero.description) html += `<p>${escapeHtml(String(doc.hero.description))}</p>`;
+      if (doc.hero.cta) html += `<a class="cta" href="#">${escapeHtml(String(doc.hero.cta))}</a>`;
+      html += `</div>`;
+    }
+    if (Array.isArray(doc.sections)) {
+      for (const sec of doc.sections) {
+        if (!sec) continue;
+        html += `<section>`;
+        if (sec.heading) html += `<h3>${escapeHtml(String(sec.heading))}</h3>`;
+        if (sec.body) html += `<p>${escapeHtml(String(sec.body))}</p>`;
+        if (Array.isArray(sec.items) && sec.items.length) {
+          html += `<ul>`;
+          for (const item of sec.items) {
+            if (item !== undefined && item !== null) html += `<li>${renderItem(item)}</li>`;
+          }
+          html += `</ul>`;
+        }
+        html += `</section>`;
+      }
+    }
+    if (doc.footer) html += `<footer>${escapeHtml(String(doc.footer))}</footer>`;
+    if (html === "") {
+      html = `<div class="empty">Document doesn't yet have any renderable landing-page fields. See the JSON state pane for raw structure.</div>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+
+  // The system prompt asks for string bullets at /sections/[i]/items/[j],
+  // but the model often produces richer {title, description} objects (which
+  // is actually nicer content). Handle both: strings render as-is, known
+  // object shapes render as bold-title + description, anything weirder
+  // falls back to compact JSON so we never print "[object Object]".
+  function renderItem(item) {
+    if (item === null || item === undefined) return "";
+    if (typeof item === "string") return escapeHtml(item);
+    if (typeof item === "number" || typeof item === "boolean") return escapeHtml(String(item));
+    if (typeof item === "object") {
+      const title = item.title ?? item.name ?? item.label ?? item.heading;
+      const desc  = item.description ?? item.desc ?? item.body ?? item.text ?? item.summary;
+      if (title && desc) return `<b>${escapeHtml(String(title))}</b> &mdash; ${escapeHtml(String(desc))}`;
+      if (title) return `<b>${escapeHtml(String(title))}</b>`;
+      if (desc)  return escapeHtml(String(desc));
+      return `<code style="font-size:11px;color:var(--muted)">${escapeHtml(JSON.stringify(item))}</code>`;
+    }
+    return escapeHtml(String(item));
+  }
+
+  function bumpCount() {
+    patchCount++;
+    document.getElementById("patch-count").textContent = ` · ${patchCount} patch${patchCount === 1 ? "" : "es"}`;
+  }
+
+  function resetPanes() {
+    doc = {};
+    patchCount = 0;
+    document.getElementById("patch-count").textContent = "";
+    document.getElementById("patch-log").innerHTML = `<div class="empty">Waiting for patches…</div>`;
+    renderDocState();
+    renderPreview();
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebSocket: connect on load, auto-reconnect on close.
+  // ---------------------------------------------------------------------------
+  function connect() {
+    const statusEl = document.getElementById("status");
+    const statusTxt = document.getElementById("status-text");
+    statusTxt.textContent = `connecting to ${WS_URL}…`;
+    statusEl.classList.remove("connected");
+
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      statusEl.classList.add("connected");
+      statusTxt.textContent = `connected to ${WS_URL}`;
+      reconnectDelay = 500;
+    };
+    ws.onclose = () => {
+      statusEl.classList.remove("connected");
+      statusTxt.textContent = `disconnected — retrying in ${reconnectDelay}ms…`;
+      setTimeout(connect, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT);
+    };
+    ws.onerror = () => { /* close will fire next */ };
+    ws.onmessage = (ev) => {
+      const entry = parsePatchLine(String(ev.data));
+      if (!entry) {
+        console.warn("Could not parse patch line:", ev.data);
+        return;
+      }
+      applyPatch(doc, entry.op, entry.path, entry.value);
+      renderPatchLog(entry);
+      renderDocState();
+      renderPreview();
+      bumpCount();
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Send: clear panes, then fire HTTP trigger. Patches arrive via the already-
+  // open WS as a separate request.
+  // ---------------------------------------------------------------------------
+  async function send() {
+    const prompt = document.getElementById("prompt").value.trim();
+    if (!prompt) return;
+    const btn = document.getElementById("send");
+    btn.disabled = true;
+    resetPanes();
+    try {
+      const url = `${TRIGGER_URL}?prompt=${encodeURIComponent(prompt)}`;
+      const res = await fetch(url);
+      if (!res.ok) console.warn(`commander returned HTTP ${res.status}`);
+    } catch (err) {
+      console.error("trigger failed:", err);
+      alert("Trigger failed: " + err.message + "\nIs `wash dev` running?");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function cancelStream() {
+    try {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send("cancel");
+        return;
+      }
+      const res = await fetch(CANCEL_URL);
+      if (!res.ok) console.warn(`cancel returned HTTP ${res.status}`);
+    } catch (err) {
+      console.error("cancel failed:", err);
+      alert("Cancel failed: " + err.message + "\nIs `wash dev` running?");
+    }
+  }
+
+  document.getElementById("send").addEventListener("click", send);
+  document.getElementById("cancel").addEventListener("click", cancelStream);
+  document.getElementById("prompt").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") send();
+  });
+  for (const b of document.querySelectorAll(".presets button")) {
+    b.addEventListener("click", () => {
+      document.getElementById("prompt").value = b.dataset.prompt;
+      send();
+    });
+  }
+
+  connect();
+</script>
+</body>
+</html>

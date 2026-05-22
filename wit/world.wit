@@ -23,11 +23,20 @@ interface types {
 interface page-generation {
     use types.{patch};
 
+    /// Control handle for an in-flight page stream. The handle is owned by the
+    /// component currently responsible for the stream and delegates cancellation
+    /// back to PageAgent.
+    resource page-stream {
+        status: func() -> string;
+        cancel-streaming: func();
+    }
+
     /// Generate a page-edit stream for the supplied prompt. Returns
     /// NDJSON-encoded bytes (`stream<u8>`) rather than a typed
     /// `stream<patch>` so the output can be forwarded directly to
-    /// MetaJson / websocket clients.
-    generate-page: async func(prompt: string) -> stream<u8>;
+    /// MetaJson / websocket clients, plus a resource that can cancel the
+    /// producer loop while it is still running.
+    generate-page: async func(prompt: string) -> tuple<stream<u8>, page-stream>;
 }
 
 /// Stream sink: a downstream component takes ownership of a
@@ -55,6 +64,13 @@ interface broker {
     /// publishers can pace themselves against slow consumers without
     /// blocking the host scheduler.
     publish-message: async func(message: string) -> result<_, string>;
+
+    /// Increment the workload-wide cancellation generation. Long-running
+    /// stream drains can compare `cancel-generation` with their starting value
+    /// and cancel any in-flight producer resource when it changes.
+    request-cancel: func() -> u64;
+    cancel-generation: func() -> u64;
+    wait-cancel-after: async func(generation: u64) -> u64;
 }
 
 world page-agent {
@@ -69,6 +85,7 @@ world page-agent {
 world commander {
     import page-generation;
     import sink;
+    import broker;
 
     import wasi:http/types@0.3.0-rc-2026-03-15;
     import wasi:clocks/types@0.3.0-rc-2026-03-15;

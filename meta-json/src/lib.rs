@@ -77,7 +77,15 @@ impl WsGuest for Component {
         wit_bindgen::spawn(async move {
             while let Some(frame) = incoming.next().await {
                 match frame {
-                    Frame::Text(s) => eprintln!("meta-json[ws]: recv text: {s}"),
+                    Frame::Text(s) => {
+                        eprintln!("meta-json[ws]: recv text: {s}");
+                        if s.trim().eq_ignore_ascii_case("cancel") {
+                            let generation = broker::request_cancel();
+                            eprintln!(
+                                "meta-json[ws]: requested cancellation generation={generation}"
+                            );
+                        }
+                    }
                     Frame::Binary(b) => {
                         eprintln!("meta-json[ws]: recv binary {} bytes", b.len())
                     }

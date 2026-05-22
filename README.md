@@ -21,6 +21,33 @@ that is forwarded to that already-connected WebSocket.
 `page-agent` calls OpenAI when a key is configured. If no key is configured, it
 falls back to a deterministic local stream so the demo still works.
 
+## Live demo UI
+
+[`ui.html`](ui.html) is a single-file flow simulator that ships alongside this
+example. `commander` bakes it in via `include_str!` (same pattern as
+[examples/blobby](../blobby)) and serves it on any bare `GET /`, so after
+`wash dev` is running you can just point a browser at **`http://localhost:8000/`**.
+Three panes show the same stream from different angles:
+
+- **Patch stream** — every WS text frame as it arrives, newest at top, color-coded by op.
+- **Document state** — the JSON document materializing live as patches apply.
+- **Rendered preview** — a styled landing-page view of the same document.
+
+A collapsible Mermaid sequence diagram at the top of the page covers the three
+phases (WS subscribe → HTTP trigger → broker fan-out).
+
+The same URL serves three different things depending on the request shape:
+- WS upgrade headers → meta-json's WebSocket handler
+- `GET /?prompt=...` → commander triggers page-agent and fans out via the broker
+- bare `GET /` → commander serves `ui.html`
+
+The strongest single demo moment: open `http://localhost:8000/` in two browser
+tabs and click Send in one — patches appear in **both** tabs simultaneously,
+which is the broker fan-out in action.
+
+You can also open `ui.html` directly via `file://` if you prefer; the UI
+auto-detects its origin and falls back to `localhost:8000`.
+
 ## Quick Start
 
 For the full local checklist, see [`DEVELOPMENT.md`](DEVELOPMENT.md).
