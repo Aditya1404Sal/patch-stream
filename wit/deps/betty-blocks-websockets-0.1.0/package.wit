@@ -1,4 +1,4 @@
-package wasmcloud:websocket@0.1.0;
+package betty-blocks:websockets@0.1.0;
 
 interface types {
     /// Close information for a WebSocket connection.

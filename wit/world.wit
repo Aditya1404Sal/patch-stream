@@ -51,31 +51,6 @@ interface sink {
     send-stream: async func(s: stream<u8>, control: page-stream) -> result;
 }
 
-interface broker {
-    /// Allocate a subscriber slot. `register` and `unregister` are
-    /// synchronous because they only touch the broker's in-memory
-    /// table and never block.
-    register: func() -> u64;
-    unregister: func(client-id: u64);
-
-    /// Wait for the next message addressed to `client-id`. Suspends
-    /// the caller via the p3 async canonical ABI; returns `none` when
-    /// the broker closes the subscription (e.g. shutdown).
-    wait-message: async func(client-id: u64) -> option<string>;
-
-    /// Publish `message` to every registered subscriber. Async so
-    /// publishers can pace themselves against slow consumers without
-    /// blocking the host scheduler.
-    publish-message: async func(message: string) -> result<_, string>;
-
-    /// Increment the workload-wide cancellation generation. Long-running
-    /// stream drains can compare `cancel-generation` with their starting value
-    /// and cancel any in-flight producer resource when it changes.
-    request-cancel: func() -> u64;
-    cancel-generation: func() -> u64;
-    wait-cancel-after: async func(generation: u64) -> u64;
-}
-
 world page-agent {
     import wasi:cli/environment@0.3.0-rc-2026-03-15;
     import wasi:clocks/monotonic-clock@0.3.0-rc-2026-03-15;
@@ -88,7 +63,7 @@ world page-agent {
 world commander {
     import page-generation;
     import sink;
-    import broker;
+    import betty-blocks:stream-broker/broker@0.1.0;
 
     import wasi:http/types@0.3.0-rc-2026-03-15;
     import wasi:clocks/types@0.3.0-rc-2026-03-15;
@@ -98,7 +73,7 @@ world commander {
 }
 
 world meta-json {
-    import broker;
+    import betty-blocks:stream-broker/broker@0.1.0;
     export sink;
-    export wasmcloud:websocket/handler@0.1.0;
+    export betty-blocks:websockets/handler@0.1.0;
 }

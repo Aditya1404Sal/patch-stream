@@ -15,7 +15,7 @@ that is forwarded to that already-connected WebSocket.
 - `commander` receives `GET /?prompt=...` over `wasi:http/handler@0.3`.
 - `page-agent` receives the prompt and returns a `stream<u8>`.
 - `meta-json` accepts that stream and forwards each line to WebSocket clients.
-- `wasmcloud:patch-stream/broker` is a wash-runtime host plugin that lets the
+- `betty-blocks:stream-broker/broker` is a wash-runtime host plugin that lets the
   HTTP path and WebSocket path rendezvous inside the same workload.
 
 `page-agent` calls OpenAI when a key is configured. If no key is configured, it
@@ -122,4 +122,4 @@ connected, then another command triggers streamed agent output into that socket.
 - [`commander/src/lib.rs`](commander/src/lib.rs) - HTTP trigger component.
 - [`page-agent/src/lib.rs`](page-agent/src/lib.rs) - OpenAI/fallback stream producer.
 - [`meta-json/src/lib.rs`](meta-json/src/lib.rs) - stream sink and WebSocket handler.
-- [`../../crates/wash-runtime/src/plugin/wasmcloud_stream_broker.rs`](../../crates/wash-runtime/src/plugin/wasmcloud_stream_broker.rs) - host broker plugin.
+- [`../../crates/wash-runtime/src/plugin/betty_blocks_stream_broker.rs`](../../crates/wash-runtime/src/plugin/betty_blocks_stream_broker.rs) - host broker plugin.

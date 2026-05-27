@@ -6,15 +6,16 @@ mod bindings {
         async: [
             "import:wasmcloud:patch-stream/page-generation@0.1.0#generate-page",
             "import:wasmcloud:patch-stream/sink@0.1.0#send-stream",
-            "import:wasmcloud:patch-stream/broker@0.1.0#wait-cancel-after",
+            "import:betty-blocks:stream-broker/broker@0.1.0#wait-cancel-after",
             "export:wasi:http/handler@0.3.0-rc-2026-03-15#handle",
         ],
     });
 }
 
 use bindings::exports::wasi::http::handler::Guest as Handler;
+use bindings::betty_blocks::stream_broker::broker;
 use bindings::wasi::http::types::{ErrorCode, Fields, Request, Response};
-use bindings::wasmcloud::patch_stream::{broker, page_generation, sink};
+use bindings::wasmcloud::patch_stream::{page_generation, sink};
 use futures::future::{Either, select};
 
 struct Component;

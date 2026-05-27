@@ -5,17 +5,18 @@ mod bindings {
         generate_all,
         async: [
             "export:wasmcloud:patch-stream/sink@0.1.0#send-stream",
-            "export:wasmcloud:websocket/handler@0.1.0#handle",
-            "import:wasmcloud:patch-stream/broker@0.1.0#wait-message",
-            "import:wasmcloud:patch-stream/broker@0.1.0#publish-message",
+            "export:betty-blocks:websockets/handler@0.1.0#handle",
+            "import:betty-blocks:stream-broker/broker@0.1.0#wait-message",
+            "import:betty-blocks:stream-broker/broker@0.1.0#publish-message",
         ],
     });
 }
 
+use bindings::betty_blocks::stream_broker::broker;
+use bindings::betty_blocks::websockets::types::{Frame, UpgradeRequest};
+use bindings::exports::betty_blocks::websockets::handler::Guest as WsGuest;
 use bindings::exports::wasmcloud::patch_stream::sink::Guest as SinkGuest;
-use bindings::exports::wasmcloud::websocket::handler::Guest as WsGuest;
-use bindings::wasmcloud::patch_stream::{broker, page_generation};
-use bindings::wasmcloud::websocket::types::{Frame, UpgradeRequest};
+use bindings::wasmcloud::patch_stream::page_generation;
 use wit_bindgen::StreamReader;
 
 struct Component;
